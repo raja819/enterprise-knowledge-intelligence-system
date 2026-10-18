@@ -115,7 +115,7 @@ The project was tested locally with Python 3.14.5. Compatibility with other Pyth
 ### 1. Clone the repository
 
 ```bash
-git clone <YOUR_GITHUB_REPOSITORY_URL>
+git clone <git clone https://github.com/raja819/enterprise-knowledge-intelligence-system.git
 cd enterprise-knowledge-intelligence-system
 ```
 
