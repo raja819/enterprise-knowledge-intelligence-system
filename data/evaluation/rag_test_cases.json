@@ -1,0 +1,30 @@
+[
+  {
+    "question": "What was the total revenue of ACME Retail Company in 2025?",
+    "expected_answer": "₹12.5 crore",
+    "expected_source": "sample_report.pdf",
+    "expected_page": 1,
+    "answerable": true
+  },
+  {
+    "question": "What was the annual revenue growth in 2025?",
+    "expected_answer": "15%",
+    "expected_source": "sample_report.pdf",
+    "expected_page": 1,
+    "answerable": true
+  },
+  {
+    "question": "Which company is described in the report?",
+    "expected_answer": "ACME Retail Company",
+    "expected_source": "sample_report.pdf",
+    "expected_page": 1,
+    "answerable": true
+  },
+  {
+    "question": "What was the company's revenue in 2030?",
+    "expected_answer": "",
+    "expected_source": "",
+    "expected_page": null,
+    "answerable": false
+  }
+]

@@ -1,0 +1,84 @@
+
+import re
+
+
+ABSTENTION_PHRASES = (
+    "do not contain enough information",
+    "does not contain enough information",
+    "could not find supporting documents",
+    "i cannot determine",
+    "i don't have enough information",
+)
+
+
+def evaluate_answer_quality(
+    answer: str,
+    sources: list[dict],
+) -> dict:
+    """
+    Perform basic, deterministic quality checks.
+
+    Note:
+    This checks answer structure and citation consistency.
+    It does not prove factual correctness or semantic grounding.
+    """
+    if not isinstance(answer, str):
+        raise ValueError("Answer must be a string.")
+
+    if not isinstance(sources, list):
+        raise ValueError("Sources must be a list.")
+
+    answer = answer.strip()
+
+    if not answer:
+        return {
+            "is_acceptable": False,
+            "has_answer": False,
+            "has_citations": False,
+            "has_sources": bool(sources),
+            "is_abstention": False,
+            "issues": ["empty_answer"],
+        }
+
+    cited_labels = set(re.findall(r"\[(S\d+)\]", answer))
+
+    available_labels = {
+        source["citation"]
+        for source in sources
+        if isinstance(source, dict)
+        and isinstance(source.get("citation"), str)
+        and re.fullmatch(r"S\d+", source["citation"])
+    }
+
+    issues = []
+
+    if not sources:
+        issues.append("no_sources")
+
+    if not cited_labels:
+        issues.append("missing_citations")
+
+    unknown_labels = sorted(cited_labels - available_labels)
+
+    if unknown_labels:
+        issues.append("unknown_citations")
+
+    is_abstention = any(
+        phrase in answer.lower()
+        for phrase in ABSTENTION_PHRASES
+    )
+
+    return {
+        "is_acceptable": (
+            bool(answer)
+            and bool(sources)
+            and bool(cited_labels)
+            and not unknown_labels
+        ),
+        "has_answer": bool(answer),
+        "has_citations": bool(cited_labels),
+        "has_sources": bool(sources),
+        "is_abstention": is_abstention,
+        "unknown_citations": unknown_labels,
+        "issues": issues,
+    }

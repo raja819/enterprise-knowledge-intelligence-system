@@ -1,0 +1,33 @@
+# API and application
+fastapi
+uvicorn[standard]
+streamlit
+requests
+python-multipart
+pydantic-settings
+
+# RAG orchestration and document loading
+langchain
+langchain-ollama
+langchain-core
+langchain-text-splitters
+langchain-openai
+pymupdf
+
+# Embeddings and vector database
+sentence-transformers
+qdrant-client
+
+# Hybrid search and reranking
+rank-bm25
+
+# Evaluation and data processing
+ragas
+pandas
+numpy
+scikit-learn
+
+# Testing and code quality
+pytest
+httpx
+ruff
