@@ -1,5 +1,5 @@
-
 import pytest
+import src.retrieval.hybrid_search as hybrid_search_module
 
 from src.retrieval.hybrid_search import (
     reciprocal_rank_fusion,
@@ -53,7 +53,29 @@ def test_hybrid_search_rejects_empty_query():
         hybrid_search("   ")
 
 
-def test_hybrid_search_returns_relevant_document():
+def test_hybrid_search_returns_relevant_document(monkeypatch):
+    sample_chunk = {
+        "text": "The annual revenue in 2025 was ₹12.5 crore.",
+        "metadata": {
+            "source": "sample_report.pdf",
+            "page": 1,
+            "chunk_id": 0,
+        },
+    }
+
+    # Use predictable test data instead of the local Qdrant database.
+    monkeypatch.setattr(
+        hybrid_search_module,
+        "get_indexed_chunks",
+        lambda: [sample_chunk],
+    )
+
+    monkeypatch.setattr(
+        hybrid_search_module,
+        "search_similar_chunks",
+        lambda query, limit: [sample_chunk],
+    )
+
     results = hybrid_search(
         "What was the annual revenue in 2025?",
         limit=3,
