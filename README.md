@@ -1,3 +1,5 @@
+![RAG Project Tests](https://github.com/raja819/enterprise-knowledge-intelligence-system/actions/workflows/tests.yml/badge.svg)
+
 # Enterprise Knowledge Intelligence System
 
 A production-oriented Retrieval-Augmented Generation (RAG) application that helps users query enterprise documents and receive context-grounded answers with source citations.
