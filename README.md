@@ -56,7 +56,7 @@ The application exposes its functionality through a FastAPI backend and a Stream
 
 The Streamlit interface lets users ask questions about indexed enterprise documents and view grounded answers with source citations.
 
-![Enterprise Knowledge Intelligence System — Streamlit Demo](docs/streamlit_demo.jpg)
+![Enterprise Knowledge Intelligence System — Streamlit Demo](docs/streamlit_demo.jpeg)
 
 
 ## Technology Stack
