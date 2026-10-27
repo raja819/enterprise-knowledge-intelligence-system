@@ -1,3 +1,4 @@
+
 [
   {
     "question": "What was the total revenue of ACME Retail Company in 2025?",
@@ -22,6 +23,34 @@
   },
   {
     "question": "What was the company's revenue in 2030?",
+    "expected_answer": "",
+    "expected_source": "",
+    "expected_page": null,
+    "answerable": false
+  },
+  {
+    "question": "Who was the CEO of ACME Retail Company in 2025?",
+    "expected_answer": "",
+    "expected_source": "",
+    "expected_page": null,
+    "answerable": false
+  },
+  {
+    "question": "How many stores did ACME Retail Company operate in 2025?",
+    "expected_answer": "",
+    "expected_source": "",
+    "expected_page": null,
+    "answerable": false
+  },
+  {
+    "question": "What was ACME Retail Company's net profit in 2025?",
+    "expected_answer": "",
+    "expected_source": "",
+    "expected_page": null,
+    "answerable": false
+  },
+  {
+    "question": "What was ACME Retail Company's total revenue in 2024?",
     "expected_answer": "",
     "expected_source": "",
     "expected_page": null,

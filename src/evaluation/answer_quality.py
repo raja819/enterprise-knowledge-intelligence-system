@@ -8,9 +8,9 @@ ABSTENTION_PHRASES = (
     "could not find supporting documents",
     "i cannot determine",
     "i don't have enough information",
+    "not mentioned in the provided document excerpts",
+    "no answer can be given based on the available information",
 )
-
-
 def evaluate_answer_quality(
     answer: str,
     sources: list[dict],

@@ -83,6 +83,26 @@ def rerank_results(
         reverse=True,
     )
 
+    # Log ranking metadata and scores without logging document text.
+    for rank, document in enumerate(reranked_documents, start=1):
+        metadata = document.get("metadata", {})
+
+        logger.debug(
+            (
+                "CROSS_ENCODER rank=%s source=%s page=%s "
+                "chunk_id=%s bm25_score=%s vector_score=%s "
+                "rrf_score=%s rerank_score=%s"
+            ),
+            rank,
+            metadata.get("source"),
+            metadata.get("page"),
+            metadata.get("chunk_id"),
+            document.get("bm25_score"),
+            document.get("vector_score", document.get("score")),
+            document.get("rrf_score"),
+            document.get("rerank_score"),
+        )
+
     logger.info(
         "Reranked %s documents; returning top %s",
         len(documents),

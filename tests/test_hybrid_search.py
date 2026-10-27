@@ -92,3 +92,35 @@ def test_hybrid_search_returns_relevant_document(monkeypatch):
         assert result["metadata"]["source"]
         assert result["metadata"]["page"] >= 1
         assert "rrf_score" in result
+
+
+def test_rrf_preserves_bm25_and_vector_scores():
+    bm25_document = {
+        "text": "Revenue increased.",
+        "metadata": {
+            "source": "sample_report.pdf",
+            "page": 1,
+            "chunk_id": 0,
+        },
+        "bm25_score": 1.14,
+    }
+
+    vector_document = {
+        "text": "Revenue increased.",
+        "metadata": {
+            "source": "sample_report.pdf",
+            "page": 1,
+            "chunk_id": 0,
+        },
+        "score": 0.76,
+        "vector_score": 0.76,
+    }
+
+    results = reciprocal_rank_fusion(
+        [[bm25_document], [vector_document]]
+    )
+
+    assert len(results) == 1
+    assert results[0]["bm25_score"] == 1.14
+    assert results[0]["vector_score"] == 0.76
+    assert results[0]["rrf_score"] > 0

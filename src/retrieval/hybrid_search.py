@@ -1,4 +1,3 @@
-
 import logging
 import re
 
@@ -76,6 +75,26 @@ def chunk_key(chunk: dict) -> tuple:
     )
 
 
+def log_stage_scores(
+    stage: str,
+    documents: list[dict],
+    score_key: str,
+) -> None:
+    """Log ranked document metadata and scores without logging document text."""
+    for rank, document in enumerate(documents, start=1):
+        metadata = document.get("metadata", {})
+
+        logger.debug(
+            "%s rank=%s source=%s page=%s chunk_id=%s score=%s",
+            stage,
+            rank,
+            metadata.get("source"),
+            metadata.get("page"),
+            metadata.get("chunk_id"),
+            document.get(score_key),
+        )
+
+
 def reciprocal_rank_fusion(
     ranked_lists: list[list[dict]],
     k: int = 60,
@@ -94,8 +113,17 @@ def reciprocal_rank_fusion(
                 continue
 
             seen_in_list.add(key)
-            documents[key] = document
-            scores[key] = scores.get(key, 0.0) + 1.0 / (k + rank)
+
+            # Merge duplicate chunks without losing existing score fields.
+            if key not in documents:
+                documents[key] = dict(document)
+            else:
+                documents[key].update(document)
+
+            scores[key] = (
+                scores.get(key, 0.0)
+                + 1.0 / (k + rank)
+            )
 
     ranked_keys = sorted(
         scores,
@@ -153,7 +181,6 @@ def hybrid_search(
 
     bm25 = BM25Okapi(tokenized_corpus)
     query_tokens = tokenize(query)
-
     bm25_scores = bm25.get_scores(query_tokens)
 
     lexical_order = sorted(
@@ -178,8 +205,30 @@ def hybrid_search(
         limit=candidate_k,
     )
 
+    # Preserve vector similarity scores under an explicit name.
+    for document in semantic_results:
+        document["vector_score"] = document.get("score")
+
+    log_stage_scores(
+        "BM25",
+        lexical_results,
+        "bm25_score",
+    )
+
+    log_stage_scores(
+        "VECTOR",
+        semantic_results,
+        "vector_score",
+    )
+
     fused_results = reciprocal_rank_fusion(
         [lexical_results, semantic_results]
+    )
+
+    log_stage_scores(
+        "RRF",
+        fused_results,
+        "rrf_score",
     )
 
     logger.info(
