@@ -75,3 +75,14 @@ def test_rejects_empty_answer():
 def test_rejects_non_string_answer():
     with pytest.raises(ValueError):
         evaluate_answer_quality(None, SOURCES)
+
+def test_accepts_abstention_without_citation_when_sources_exist():
+    result = evaluate_answer_quality(
+        "The supplied documents do not contain enough information "
+        "to determine the revenue in 2030.",
+        SOURCES,
+    )
+
+    assert result["is_abstention"] is True
+    assert result["has_citations"] is False
+    assert result["is_acceptable"] is True

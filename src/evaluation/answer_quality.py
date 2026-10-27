@@ -72,8 +72,16 @@ def evaluate_answer_quality(
         "is_acceptable": (
             bool(answer)
             and bool(sources)
-            and bool(cited_labels)
-            and not unknown_labels
+            and (
+                (
+                    is_abstention
+                    and not cited_labels
+                )
+                or (
+                    bool(cited_labels)
+                    and not unknown_labels
+                )
+            )
         ),
         "has_answer": bool(answer),
         "has_citations": bool(cited_labels),
