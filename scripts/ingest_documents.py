@@ -1,8 +1,10 @@
 import argparse
 import logging
+import time
 from pathlib import Path
 
 from src.config import PROJECT_ROOT
+from src.ingestion.audit_logger import write_ingestion_audit
 from src.ingestion.chunker import split_pages_into_chunks
 from src.ingestion.pdf_loader import load_pdf
 from src.logging_config import setup_logging
@@ -14,23 +16,70 @@ RAW_DATA_DIR = PROJECT_ROOT / "data" / "raw"
 
 
 def ingest_pdf(pdf_path: Path) -> dict:
-    """Extract, chunk, and index one PDF document."""
+    """Extract, chunk, index, and audit one PDF document."""
+
+    started = time.perf_counter()
+    pages_extracted = 0
+    chunks_created = 0
+    indexed_count = 0
 
     logger.info("Starting ingestion: %s", pdf_path.name)
 
-    pages = load_pdf(pdf_path)
-    chunks = split_pages_into_chunks(pages)
-    indexed_count = index_chunks(chunks)
+    try:
+        pages = load_pdf(pdf_path)
+        pages_extracted = len(pages)
+
+        chunks = split_pages_into_chunks(pages)
+        chunks_created = len(chunks)
+
+        indexed_count = index_chunks(chunks)
+
+    except Exception as exc:
+        duration_seconds = round(time.perf_counter() - started, 4)
+
+        audit_record = {
+            "file": pdf_path.name,
+            "status": "failure",
+            "pages_extracted": pages_extracted,
+            "chunks_created": chunks_created,
+            "chunks_indexed": indexed_count,
+            "duration_seconds": duration_seconds,
+            "error_type": type(exc).__name__,
+            "error": str(exc),
+        }
+
+        try:
+            write_ingestion_audit(audit_record)
+        except OSError:
+            logger.exception(
+                "Audit logging also failed for %s",
+                pdf_path.name,
+            )
+
+        logger.exception("Failed to ingest %s", pdf_path.name)
+        raise
+
+    duration_seconds = round(time.perf_counter() - started, 4)
 
     result = {
         "file": pdf_path.name,
-        "pages_extracted": len(pages),
-        "chunks_created": len(chunks),
+        "status": "success",
+        "pages_extracted": pages_extracted,
+        "chunks_created": chunks_created,
         "chunks_indexed": indexed_count,
+        "duration_seconds": duration_seconds,
     }
 
-    logger.info("Ingestion completed: %s", result)
+    try:
+        write_ingestion_audit(result)
+    except OSError:
+        logger.exception(
+            "Ingestion succeeded but its audit record "
+            "could not be written: %s",
+            pdf_path.name,
+        )
 
+    logger.info("Ingestion completed: %s", result)
     return result
 
 
@@ -67,12 +116,9 @@ def main() -> None:
     for pdf_path in pdf_files:
         try:
             results.append(ingest_pdf(pdf_path))
-        except Exception as exc:
-            logger.exception(
-                "Failed to ingest %s: %s",
-                pdf_path.name,
-                exc,
-            )
+        except Exception:
+            # ingest_pdf already logs the exception and audit record.
+            continue
 
     print("\nINGESTION SUMMARY")
 
@@ -85,3 +131,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+    
