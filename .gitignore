@@ -35,3 +35,5 @@ data/evaluation/*
 !data/evaluation/.gitkeep
 !data/evaluation/rag_test_cases.json
 !data/evaluation/rag_evaluation_results.json
+!data/evaluation/rag_evaluation_results.csv
+!data/evaluation/rag_evaluation_results.json

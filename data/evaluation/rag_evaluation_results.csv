@@ -1,0 +1,9 @@
+﻿question,answerable,pass,failure_reasons,answer_match,expected_source_found,citations_valid,abstained,retrieved_chunks,ranked_chunks,relevant_chunks_in_index,first_relevant_rank,reciprocal_rank,precision_at_1,precision_at_3,precision_at_5,recall_at_1,recall_at_3,recall_at_5
+What was the total revenue of ACME Retail Company in 2025?,True,True,,True,True,True,,9,5,2,1,1.0,1.0,0.3333333333333333,0.2,0.5,0.5,0.5
+What was the annual revenue growth in 2025?,True,True,,True,True,True,,9,5,2,2,0.5,0.0,0.3333333333333333,0.4,0.0,0.5,1.0
+Which company is described in the report?,True,True,,True,True,True,,9,5,2,1,1.0,1.0,0.3333333333333333,0.2,0.5,0.5,0.5
+What was the company's revenue in 2030?,False,True,,,,False,True,,,,,,,,,,,
+Who was the CEO of ACME Retail Company in 2025?,False,True,,,,False,True,,,,,,,,,,,
+How many stores did ACME Retail Company operate in 2025?,False,True,,,,False,True,,,,,,,,,,,
+What was ACME Retail Company's net profit in 2025?,False,True,,,,False,True,,,,,,,,,,,
+What was ACME Retail Company's total revenue in 2024?,False,True,,,,False,True,,,,,,,,,,,
