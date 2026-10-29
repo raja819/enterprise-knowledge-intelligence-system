@@ -1,15 +1,26 @@
-
 import re
-
 
 ABSTENTION_PHRASES = (
     "do not contain enough information",
     "does not contain enough information",
     "could not find supporting documents",
     "i cannot determine",
+    "i can't determine",
     "i don't have enough information",
     "not mentioned in the provided document excerpts",
     "no answer can be given based on the available information",
+    "do not contain information",
+    "does not contain information",
+    "do not contain any information",
+    "does not contain any information",
+    "not contained in the provided documents",
+    "not available in the provided documents",
+    "not available in the provided excerpts",
+    "not mentioned in the provided excerpts",
+    "not specified in the provided documents",
+    "cannot be determined from the provided information",
+    "cannot be determined from the available information",
+    "insufficient information",
 )
 def evaluate_answer_quality(
     answer: str,

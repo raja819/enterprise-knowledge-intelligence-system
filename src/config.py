@@ -21,6 +21,8 @@ class Settings(BaseSettings):
 
     chunk_size: int = 1000
     chunk_overlap: int = 150
+
+    # Retrieval settings
     retrieval_top_k: int = 10
     rerank_top_k: int = 5
 
