@@ -22,6 +22,8 @@ ABSTENTION_PHRASES = (
     "cannot be determined from the available information",
     "insufficient information",
 )
+
+
 def evaluate_answer_quality(
     answer: str,
     sources: list[dict],
@@ -51,7 +53,10 @@ def evaluate_answer_quality(
             "issues": ["empty_answer"],
         }
 
-    cited_labels = set(re.findall(r"\[(S\d+)\]", answer))
+    # Detect citations such as [S1], [S2], etc.
+    cited_labels = set(
+        re.findall(r"\[(S\d+)\]", answer)
+    )
 
     available_labels = {
         source["citation"]
@@ -74,9 +79,45 @@ def evaluate_answer_quality(
     if unknown_labels:
         issues.append("unknown_citations")
 
-    is_abstention = any(
-        phrase in answer.lower()
-        for phrase in ABSTENTION_PHRASES
+    # Remove citations before checking abstention language.
+    answer_without_citations = re.sub(
+        r"\[\s*S\d+\s*\]",
+        "",
+        answer,
+        flags=re.IGNORECASE,
+    )
+
+    answer_without_citations = re.sub(
+        r"\s+",
+        " ",
+        answer_without_citations,
+    ).strip().lower()
+
+    # Split the answer into sentences.
+    answer_sentences = [
+        sentence.strip()
+        for sentence in re.split(
+            r"(?<=[.!?])\s+",
+            answer_without_citations,
+        )
+        if sentence.strip()
+    ]
+
+    # Find sentences that indicate insufficient evidence.
+    abstention_sentences = [
+        sentence
+        for sentence in answer_sentences
+        if any(
+            phrase in sentence
+            for phrase in ABSTENTION_PHRASES
+        )
+    ]
+
+    # The answer is a plain abstention only if every sentence
+    # expresses that the available information is insufficient.
+    is_abstention = (
+        bool(abstention_sentences)
+        and len(abstention_sentences) == len(answer_sentences)
     )
 
     return {

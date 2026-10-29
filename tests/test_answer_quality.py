@@ -76,6 +76,7 @@ def test_rejects_non_string_answer():
     with pytest.raises(ValueError):
         evaluate_answer_quality(None, SOURCES)
 
+
 def test_accepts_abstention_without_citation_when_sources_exist():
     result = evaluate_answer_quality(
         "The supplied documents do not contain enough information "
@@ -86,3 +87,40 @@ def test_accepts_abstention_without_citation_when_sources_exist():
     assert result["is_abstention"] is True
     assert result["has_citations"] is False
     assert result["is_acceptable"] is True
+
+
+def test_mixed_answer_with_citation_is_not_classified_as_plain_abstention():
+    answer = (
+        "The report does not contain enough information. "
+        "Revenue was ₹50 crore. [S1]"
+    )
+
+    sources = [
+        {
+            "citation": "S1",
+            "source": "sample_report.pdf",
+            "page": 1,
+        }
+    ]
+
+    result = evaluate_answer_quality(answer, sources)
+
+    assert result["is_abstention"] is False
+    assert result["has_citations"] is True
+
+
+def test_unknown_citation_does_not_make_answer_acceptable():
+    answer = "Revenue was ₹50 crore. [S9]"
+
+    sources = [
+        {
+            "citation": "S1",
+            "source": "sample_report.pdf",
+            "page": 1,
+        }
+    ]
+
+    result = evaluate_answer_quality(answer, sources)
+
+    assert result["is_acceptable"] is False
+    assert result["unknown_citations"] == ["S9"]
