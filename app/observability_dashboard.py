@@ -10,6 +10,7 @@ ROOT = Path(__file__).resolve().parent.parent
 EVALUATION_JSON = ROOT / "data" / "evaluation" / "rag_evaluation_results.json"
 EVALUATION_CSV = ROOT / "data" / "evaluation" / "rag_evaluation_results.csv"
 INGESTION_LOG = ROOT / "logs" / "ingestion_audit.jsonl"
+QUERY_METRICS_LOG = ROOT / "logs" / "query_metrics.jsonl"
 
 st.set_page_config(
     page_title="RAG Observability Dashboard",
@@ -68,6 +69,34 @@ def load_ingestion_logs(path_string, modified_time):
     return pd.DataFrame(records)
 
 
+@st.cache_data
+def load_query_metrics(path_string, modified_time):
+    path = Path(path_string)
+    records = []
+
+    if not path.exists():
+        return pd.DataFrame()
+
+    with path.open("r", encoding="utf-8") as file:
+        for line_number, line in enumerate(file, start=1):
+            if not line.strip():
+                continue
+
+            try:
+                record = json.loads(line)
+                if isinstance(record, dict):
+                    records.append(record)
+            except json.JSONDecodeError:
+                records.append(
+                    {
+                        "status": "invalid_log_record",
+                        "error_type": f"Invalid JSON at line {line_number}",
+                    }
+                )
+
+    return pd.DataFrame(records)
+
+
 def file_mtime(path):
     return path.stat().st_mtime if path.exists() else 0
 
@@ -80,6 +109,10 @@ results = load_evaluation_csv(
 )
 ingestion = load_ingestion_logs(
     str(INGESTION_LOG), file_mtime(INGESTION_LOG)
+)
+query_metrics = load_query_metrics(
+    str(QUERY_METRICS_LOG),
+    file_mtime(QUERY_METRICS_LOG),
 )
 
 with st.sidebar:
@@ -318,3 +351,164 @@ st.caption(
     "cases and relevance labels; they do not by themselves guarantee "
     "production accuracy."
 )
+
+st.divider()
+st.header("5. Query Performance Monitoring")
+
+if query_metrics.empty:
+    st.info(
+        "No query performance records found. "
+        "Send API requests to populate the metrics log."
+    )
+else:
+    metrics_view = query_metrics.copy()
+
+    numeric_columns = [
+        "total_duration_ms",
+        "retrieval_duration_ms",
+        "reranking_duration_ms",
+        "generation_duration_ms",
+        "retrieved_documents",
+        "reranked_documents",
+    ]
+
+    for column in numeric_columns:
+        if column in metrics_view.columns:
+            metrics_view[column] = pd.to_numeric(
+                metrics_view[column], errors="coerce"
+            )
+
+    if "status" not in metrics_view.columns:
+        metrics_view["status"] = "unknown"
+
+    total_requests = len(metrics_view)
+    successful = int((metrics_view["status"] == "success").sum())
+    errors = int((metrics_view["status"] == "error").sum())
+    no_documents = int(
+        (metrics_view["status"] == "no_documents").sum()
+    )
+
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("Total requests", total_requests)
+    c2.metric("Successful", successful)
+    c3.metric("Errors", errors)
+    c4.metric("No documents", no_documents)
+
+    if "total_duration_ms" in metrics_view.columns:
+        latency = metrics_view["total_duration_ms"].dropna()
+
+        c5, c6 = st.columns(2)
+        c5.metric(
+            "Average total latency",
+            f"{latency.mean():.2f} ms" if not latency.empty else "N/A",
+        )
+        c6.metric(
+            "p95 total latency",
+            f"{latency.quantile(0.95):.2f} ms"
+            if not latency.empty else "N/A",
+        )
+
+    stage_columns = [
+        column for column in [
+            "retrieval_duration_ms",
+            "reranking_duration_ms",
+            "generation_duration_ms",
+        ]
+        if column in metrics_view.columns
+    ]
+
+    if stage_columns:
+        st.subheader("Average stage latency")
+
+        stage_labels = {
+            "retrieval_duration_ms": "Retrieval",
+            "reranking_duration_ms": "Reranking",
+            "generation_duration_ms": "Generation",
+        }
+
+        stage_data = metrics_view[stage_columns].copy()
+
+        if "status" in metrics_view.columns:
+            no_document_requests = (
+                metrics_view["status"] == "no_documents"
+            )
+
+            for column in (
+                "reranking_duration_ms",
+                "generation_duration_ms",
+            ):
+                if column in stage_data.columns:
+                    stage_data.loc[
+                        no_document_requests, column
+                    ] = float("nan")
+
+        stage_averages = stage_data.mean().rename(
+            index=stage_labels
+        )
+
+        if stage_averages.notna().any():
+            st.bar_chart(stage_averages.dropna())
+        else:
+            st.info(
+                "No stage latency measurements are available "
+                "for the selected requests."
+            )
+
+
+    if "status" in metrics_view.columns:
+        st.subheader("Request status distribution")
+        status_counts = (
+            metrics_view["status"]
+            .value_counts()
+            .rename_axis("Status")
+            .to_frame("Requests")
+        )
+        st.bar_chart(status_counts)
+
+    if "error_type" in metrics_view.columns:
+        error_rows = metrics_view[
+            metrics_view["status"] == "error"
+        ]
+
+        if not error_rows.empty:
+            st.subheader("Error summary")
+            error_counts = (
+                error_rows["error_type"]
+                .fillna("Unknown")
+                .value_counts()
+                .rename_axis("Error type")
+                .to_frame("Count")
+            )
+            st.dataframe(
+                error_counts,
+                use_container_width=True,
+            )
+
+    display_columns = [
+        column for column in [
+            "timestamp",
+            "request_id",
+            "status",
+            "total_duration_ms",
+            "retrieval_duration_ms",
+            "reranking_duration_ms",
+            "generation_duration_ms",
+            "retrieved_documents",
+            "reranked_documents",
+            "error_type",
+        ]
+        if column in metrics_view.columns
+    ]
+
+    st.subheader("Recent query records")
+    st.dataframe(
+        metrics_view[display_columns].tail(100).iloc[::-1],
+        use_container_width=True,
+        hide_index=True,
+    )
+
+    st.caption(
+        "Latency values are measured locally. "
+        "The p95 is calculated from recorded requests, "
+        "so small samples may not represent production performance."
+    )
