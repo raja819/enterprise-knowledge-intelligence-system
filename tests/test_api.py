@@ -76,7 +76,7 @@ def test_query_returns_answer_and_sources(monkeypatch):
     assert response.status_code == 200
 
     body = response.json()
-
+    assert body["query_id"]
     assert "₹12.5 crore" in body["answer"]
     assert body["has_citations"] is True
     assert body["citations_valid"] is True
@@ -101,6 +101,7 @@ def test_query_handles_no_retrieved_documents(monkeypatch):
 
     body = response.json()
 
+    assert body["query_id"]
     assert body["sources"] == []
     assert body["has_citations"] is False
     assert "could not find supporting documents" in body["answer"].lower()

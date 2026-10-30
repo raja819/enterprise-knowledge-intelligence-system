@@ -63,6 +63,7 @@ def test_successful_query_records_performance_metrics(
     assert len(records) == 1
 
     record = records[0]
+    assert response.json()["query_id"] == record["request_id"]
     assert record["status"] == "success"
     assert record["retrieved_documents"] == 1
     assert record["reranked_documents"] == 1
@@ -93,6 +94,7 @@ def test_no_documents_records_no_documents_status(
     assert response.json()["sources"] == []
 
     records = read_metrics(metrics_file)
+    assert response.json()["query_id"] == records[0]["request_id"]
     assert len(records) == 1
     assert records[0]["status"] == "no_documents"
     assert records[0]["retrieved_documents"] == 0

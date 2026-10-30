@@ -42,6 +42,7 @@ with st.sidebar:
         except requests.RequestException as exc:
             st.error(f"API connection failed: {exc}")
 
+
 st.subheader("Ask a question")
 
 question = st.text_area(
@@ -72,12 +73,12 @@ if st.button("Ask Question", type="primary"):
                 )
             else:
                 result = response.json()
-                answer = result.get("answer", "")
-                sources = result.get("sources", [])
-                quality = result.get("answer_quality", {})
 
                 st.session_state["last_result"] = result
                 st.session_state["last_question"] = question.strip()
+                st.session_state["feedback_submitted"] = False
+
+                st.rerun()
 
         except requests.RequestException as exc:
             st.error(
@@ -86,16 +87,20 @@ if st.button("Ask Question", type="primary"):
                 f"Details: {exc}"
             )
 
+
 result = st.session_state.get("last_result")
 
 if result:
     answer = result.get("answer", "")
     sources = result.get("sources", [])
     quality = result.get("answer_quality", {})
+    query_id = result.get("query_id", "")
+    last_question = st.session_state.get("last_question", "")
 
     cited_labels = set(
         re.findall(r"\[(S\d+)\]", answer)
     )
+
     available_labels = {
         source.get("citation")
         for source in sources
@@ -168,6 +173,7 @@ if result:
     with st.expander("Technical validation details"):
         st.json(
             {
+                "query_id": query_id,
                 "citations_valid": citations_valid,
                 "has_citations": has_citations,
                 "missing_citations": result.get(
@@ -176,3 +182,96 @@ if result:
                 "answer_quality": quality,
             }
         )
+
+    # -------------------------------------------------
+    # RAG ANSWER FEEDBACK
+    # -------------------------------------------------
+
+    st.divider()
+    st.subheader("Was this answer helpful?")
+    st.caption(
+        "Your feedback helps us monitor and improve answer quality."
+    )
+
+    if not query_id:
+        st.error(
+            "This response has no query ID. "
+            "Feedback cannot be submitted."
+        )
+
+    elif st.session_state.get("feedback_submitted", False):
+        st.success(
+            "Thank you! Your feedback has already been submitted."
+        )
+
+    else:
+        with st.form("rag_feedback_form"):
+            rating_label = st.radio(
+                "Rate this answer",
+                options=["👍 Helpful", "👎 Not Helpful"],
+                horizontal=True,
+            )
+
+            comment = st.text_area(
+                "Optional comment",
+                placeholder=(
+                    "Tell us what was useful or what needs improvement..."
+                ),
+                max_chars=2000,
+                height=90,
+            )
+
+            submitted = st.form_submit_button(
+                "Submit Feedback",
+                type="primary",
+                use_container_width=True,
+            )
+
+        if submitted:
+            rating = (
+                "up"
+                if rating_label == "👍 Helpful"
+                else "down"
+            )
+
+            feedback_payload = {
+                "query_id": query_id,
+                "question": last_question,
+                "answer": answer,
+                "rating": rating,
+                "comment": comment.strip() or None,
+            }
+
+            try:
+                with st.spinner("Submitting your feedback..."):
+                    feedback_response = requests.post(
+                        f"{API_URL}/feedback",
+                        json=feedback_payload,
+                        timeout=15,
+                    )
+
+                if feedback_response.ok:
+                    st.session_state["feedback_submitted"] = True
+                    feedback_data = feedback_response.json()
+
+                    st.success(
+                        "Thank you! Your feedback was submitted successfully."
+                    )
+
+                    st.write(
+                        f"Feedback ID: {feedback_data['feedback_id']}"
+                    )
+                    st.rerun()
+
+                else:
+                    st.error(
+                        f"Feedback submission failed "
+                        f"({feedback_response.status_code}): "
+                        f"{feedback_response.text}"
+                    )
+
+            except requests.RequestException as exc:
+                st.error(
+                    "Could not submit feedback. "
+                    f"Details: {exc}"
+                )

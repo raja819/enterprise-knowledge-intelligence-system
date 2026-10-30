@@ -30,6 +30,10 @@ data/raw/*
 data/processed/*
 !data/processed/.gitkeep
 
+# User feedback database (contains user-submitted feedback)
+data/feedback/*
+!data/feedback/.gitkeep
+
 # Evaluation evidence
 data/evaluation/*
 !data/evaluation/baseline/
