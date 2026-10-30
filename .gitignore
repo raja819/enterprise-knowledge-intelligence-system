@@ -32,6 +32,9 @@ data/processed/*
 
 # Evaluation evidence
 data/evaluation/*
+!data/evaluation/baseline/
+data/evaluation/baseline/*
+!data/evaluation/baseline/rag_baseline.json
 !data/evaluation/.gitkeep
 !data/evaluation/rag_test_cases.json
 !data/evaluation/rag_evaluation_results.json
